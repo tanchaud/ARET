@@ -1,0 +1,88 @@
+function [ClusterTable] = Cluster_Overlap_main(ImageFiles)
+
+%%%% ----- Cluster Overlap Task ----- %%%%
+%---------------------------------------------------------------------------------------------------------------%
+
+% 'CodeDir' contains the fullpath to the folder into which the Toolbox is copied.
+% 'DataDir' is the fullpath to the directory whose data needs to be analysed
+% by this pipeline.
+%
+% %----Description----%
+% Run this script to obtain proportion of brain regions detected in the cluster images. 
+
+% FORMAT [ClusterTable] = Cluster_Overlap_main(ImageFiles)
+% 
+% %----Input----%
+% ImageFiles: Filename of cluster image. 
+
+% %----Output----%
+% ClusterTable: Table array showing per
+%
+% -----------------------------------------%
+% Tanusree Chaudhuri
+% Max Planck Institute of Psychiatry, Munich
+% tanusree_chaudhuri@psych.mpg.de
+% -----------------------------------------%
+
+%---------------------------------------------------------------------------------------------------------------%
+
+global DataDir;
+global TemplatesDir;
+
+cd(DataDir);
+
+% ----- Binarizing cluster image ------ %
+ImagesToBeMasked = ImageFiles;
+InputFilename = cellstr(ImagesToBeMasked);
+[pth,nam,ext] = spm_fileparts(ImageFiles);
+OutputFilename = strcat(pth,'/Mask_',nam,ext);
+MaskingClusterImages(InputFilename,OutputFilename);
+
+% ------ Cluster Labelling.------ %
+ClusterMask = spm_vol(OutputFilename);
+ClusterMask = spm_read_vols(ClusterMask);
+CC = bwconncomp(ClusterMask);
+NumberOfClusters = CC.NumObjects;
+
+
+for img_cluster = 1:NumberOfClusters
+
+    [ClusterLabels,ClusterParents,ClusterLabelsPercent] = ClusterProportionInPercentages(TemplatesDir,CC,img_cluster);
+    if(isempty(ClusterLabels))
+        Cluster_blob_num = cellstr(repmat(['Cluster',' ',num2str(img_cluster)],[1, 1]));
+        ClusterLabels{end + 1} = [];
+        ClusterLabelsPercent = 100;
+        ClusterParents{end + 1} = [];
+    end
+    Cluster_blob_num = cellstr(repmat(['Cluster',' ',num2str(img_cluster)],[length(ClusterLabels) 1]));
+    ClusterParents = ClusterParents';
+    ClusterImageInfo = table(Cluster_blob_num,ClusterLabels,ClusterParents,ClusterLabelsPercent);
+    disp(strcat('Blob','_',num2str(img_cluster),'_','done'));
+    
+    
+    if(img_cluster == 1)
+        ClusterTable = ClusterImageInfo;
+    else
+        ClusterTable = [ClusterTable;ClusterImageInfo];
+    end
+        
+end
+
+
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

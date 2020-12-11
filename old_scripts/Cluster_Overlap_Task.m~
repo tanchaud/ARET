@@ -1,0 +1,57 @@
+%%%% ----- Cluster Overlap Task ----- %%%%
+% by Tanusree Chaudhuri
+% Documentation: Please run this script to obtain proportion of brain
+% regions detected in the gray matter clusters in the image. The output
+% will appear in the command window as the number of clusters detected and
+% the proportion (in percentage) of different brain regions. 
+% 'CodeDir' contains the fullpath to the folder into which contents of
+% remote repository ClusterFinal are copied using the 'git clone <url of remote repo>' command in the terminal.
+% DataDir is the fullpath to the directory whose data needs to be analysed
+% by this pipeline.
+
+clear all;clc;
+CodeDir = input('Enter fullpath to code directory: ');
+addpath(genpath(CodeDir));
+DataDir = input('Enter fullpath to the data directory: ');
+cd(DataDir);
+prefix = input('Enter prefix of images to be analysed: ');% For example, prefix = 'W_'
+ImageFiles = dir(strcat(prefix,'*.*'));
+for i = 1:length(ImageFiles)
+    
+    InputFilename = cellstr(strcat(ImageFiles(i).folder,'/',ImageFiles(i).name)); 
+    Coregister(CodeDir,InputFilename);
+%end
+
+% Create mask of cluster image
+    ImagesToBeMasked = extractfield(dir('rW_*.*'),'name');
+%for img = 1:length(ImagesToBeMasked)
+    
+    InputFilename = cellstr(ImagesToBeMasked{1,i});
+    OutputFilename = strcat('Mask_',ImagesToBeMasked{1,i});
+    MaskingClusterImages(InputFilename,OutputFilename);
+    
+    % ------ Cluster Constituents.------ %%
+    ClusterMask = niftiread(strcat('Mask_',ImagesToBeMasked{1,i}));
+    CC = bwconncomp(ClusterMask);
+    NumberOfClusters = CC.NumObjects;
+    load TREE;
+    for img_cluster = 1:NumberOfClusters
+       combinedtxt = ClusterProportionInPercentages(CC,img_cluster,tree); 
+       disp(combinedtxt)
+    end
+end
+
+close all;
+
+
+
+
+
+
+
+
+
+
+
+
+
